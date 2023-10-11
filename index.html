@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://yt3.googleusercontent.com/gZtq95S4PrXKL5oezrYjywQVZhkcUwuudyTntnxPhy3rWfB3WETRcQVNH6yknKca3A5r6blrwnc=s176-c-k-c0x00ffffff-no-rj">
+    <title>Pizza Simulator</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            font-family: 'Arial', sans-serif;
+            font-size: 2rem;
+            color: #ff6633;
+        }
+
+        .pizza-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+
+        .pizza-icon {
+            width: 100px;
+            height: 100px;
+            cursor: pointer;
+        }
+
+        .pizza-count {
+            font-size: 1.2rem;
+        }
+
+        .upgrades {
+            display: flex;
+            justify-content: center;
+        }
+
+        .upgrade {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #333;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+
+        .upgrade h2 {
+            font-size: 1.2rem;
+            color: #ff6633;
+        }
+
+        .upgrade p {
+            font-size: 1rem;
+        }
+
+        .upgrade button {
+            padding: 5px 10px;
+            background-color: #ff6633;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pizza Simulator</h1>
+    <div class="pizza-container">
+        <img class="pizza-icon" src="https://yt3.googleusercontent.com/gZtq95S4PrXKL5oezrYjywQVZhkcUwuudyTntnxPhy3rWfB3WETRcQVNH6yknKca3A5r6blrwnc=s176-c-k-c0x00ffffff-no-rj" alt="Pizza">
+        <div class="pizza-count">0 pizzas</div>
+    </div>
+    <div class="upgrades">
+        <div class="upgrade">
+            <h2>Oven Speed</h2>
+            <p>Oven cooldown: <span id="oven-cooldown">10</span> ms</p>
+            <button id="speed-upgrade">Upgrade Speed (Cost: <span id="speed-upgrade-cost">10</span> pizzas)</button>
+        </div>
+        <div class="upgrade">
+            <h2>Oven Multiplier</h2>
+            <p>Multiplying pizzas per click: <span id="oven-multiplier">1</span></p>
+            <button id="multiplier-upgrade">Upgrade Multiplier (Cost: <span id="multiplier-upgrade-cost">10</span> pizzas)</button>
+        </div>
+        <div class="upgrade">
+            <h2>WIN!</h2>
+            <p>Wins: <span id="wins">0</span></p>
+            <button id="win-upgrade">Win! (Cost: 10,000,000 pizzas)</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let gameData = JSON.parse(localStorage.getItem('pizzaGameData')) || {
+                pizzaCount: 0,
+                ovenMultiplier: 1,
+                ovenCooldown: 10,
+                wins: 0,
+            };
+            let lastClickTime = 0;
+
+            const pizzaCountElement = document.querySelector('.pizza-count');
+            const ovenMultiplierElement = document.getElementById('oven-multiplier');
+            const ovenCooldownElement = document.getElementById('oven-cooldown');
+            const winsElement = document.getElementById('wins');
+            const speedUpgradeButton = document.getElementById('speed-upgrade');
+            const multiplierUpgradeButton = document.getElementById('multiplier-upgrade');
+            const winUpgradeButton = document.getElementById('win-upgrade');
+            const pizzaIcon = document.querySelector('.pizza-icon');
+            const speedUpgradeCostElement = document.getElementById('speed-upgrade-cost');
+            const multiplierUpgradeCostElement = document.getElementById('multiplier-upgrade-cost');
+
+            function updatePizzaCount() {
+                pizzaCountElement.textContent = `${gameData.pizzaCount} pizzas`;
+                saveGameData();
+            }
+
+            function updateUpgradeCosts() {
+                speedUpgradeCostElement.textContent = calculateSpeedUpgradeCost();
+                multiplierUpgradeCostElement.textContent = calculateMultiplierUpgradeCost();
+            }
+
+            function calculateSpeedUpgradeCost() {
+                if (gameData.ovenCooldown >= 100) {
+                    return 'MAX!';
+                } else {
+                    return 10 * (Math.floor(gameData.ovenCooldown / 10) + 1);
+                }
+            }
+
+            function calculateMultiplierUpgradeCost() {
+                return 10 * Math.pow(1.5, gameData.ovenMultiplier - 1);
+            }
+
+            function upgradeSpeed() {
+                const cost = calculateSpeedUpgradeCost();
+                if (cost === 'MAX!') return;
+
+                if (gameData.pizzaCount >= cost) {
+                    gameData.pizzaCount -= cost;
+                    gameData.ovenCooldown = Math.min(gameData.ovenCooldown + 10, 100);
+                    updatePizzaCount();
+                    ovenCooldownElement.textContent = gameData.ovenCooldown === 100 ? 'MAX!' : `${gameData.ovenCooldown} ms`;
+                    updateUpgradeCosts();
+                }
+            }
+
+            function upgradeMultiplier() {
+                const cost = calculateMultiplierUpgradeCost();
+                if (gameData.pizzaCount >= cost) {
+                    gameData.pizzaCount -= cost;
+                    gameData.ovenMultiplier++;
+                    updatePizzaCount();
+                    ovenMultiplierElement.textContent = gameData.ovenMultiplier;
+                    updateUpgradeCosts();
+                }
+            }
+
+            function upgradeWin() {
+                if (gameData.pizzaCount >= 10000000) {
+                    gameData.pizzaCount -= 10000000;
+                    gameData.wins++;
+                    gameData.pizzaCount = 0;
+                    gameData.ovenMultiplier = 1;
+                    gameData.ovenCooldown = 10;
+                    updatePizzaCount();
+                    ovenMultiplierElement.textContent = gameData.ovenMultiplier;
+                    ovenCooldownElement.textContent = gameData.ovenCooldown;
+                    winsElement.textContent = gameData.wins;
+                    updateUpgradeCosts();
+                }
+            }
+
+            pizzaIcon.addEventListener('click', function () {
+                const currentTime = Date.now();
+                if (currentTime - lastClickTime >= gameData.ovenCooldown) {
+                    const pizzasToAdd = gameData.ovenMultiplier;
+                    gameData.pizzaCount += pizzasToAdd;
+                    updatePizzaCount();
+                   
+                    lastClickTime = currentTime;
+                }
+            });
+
+            speedUpgradeButton.addEventListener('click', upgradeSpeed);
+            multiplierUpgradeButton.addEventListener('click', upgradeMultiplier);
+            winUpgradeButton.addEventListener('click', upgradeWin);
+
+            updatePizzaCount();
+            updateUpgradeCosts();
+
+            function saveGameData() {
+                localStorage.setItem('pizzaGameData', JSON.stringify(gameData));
+            }
+        });
+    </script>
+</body>
+</html>
